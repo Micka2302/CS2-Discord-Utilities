@@ -32,7 +32,9 @@ namespace DiscordUtilities
                     Database = Config.Database.DatabaseName,
                     Password = Config.Database.Password,
                 };
-                _ = CreateDatabaseConnection();
+                
+                CreateDatabaseConnection().GetAwaiter().GetResult();
+                _ = LoadDiscordBOT();
 
                 if (string.IsNullOrEmpty(Config.ServerID) || !ulong.TryParse(Config.ServerID, out _))
                 {
