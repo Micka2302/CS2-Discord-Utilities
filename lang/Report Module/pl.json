@@ -1,4 +1,4 @@
-{
+﻿{
     "Chat.Prefix": "{darkred}[Discord]{default}",
     "Menu.ReportSelectPlayer": "Wybierz gracza",
     "Menu.ReportSelectReason": "Wybierz powod",
@@ -7,9 +7,10 @@
     "Chat.ReportSend": "Gracz {green}{0}{default} zostal zgloszony! (Powod: {darkred}{1}{default})",
     "Chat.ReportCancelled": "Twoje zgloszenie zostalo anulowane.",
     "Chat.ReportShortReason": "Nieprawidlowa dlugosc zgloszenia.",
-    "Chat.ReportBlockedReason": "Powód nie może zawierać słowa {darkred}{0}{default}! Proszę podać powód ponownie. Aby anulować, wpisz {green}!cancel",
+    "Chat.ReportBlockedReason": "PowÃ³d nie moÅ¼e zawieraÄ‡ sÅ‚owa {darkred}{0}{default}! ProszÄ™ podaÄ‡ powÃ³d ponownie. Aby anulowaÄ‡, wpisz {green}!cancel",
     "Chat.ReportNoTargetsFound": "Brak osob do zgloszenia. Jestes sam na serwerze!",
     "Chat.ReportCooldown": "Mozesz uzyc komendy report co {green}{0} sekund{default}!",
+    "Chat.TargetRecentlyReported": "Gracz {darkred}{0}{default} został już zgłoszony! Poczekaj {green}{1} sekund przed ponownym zgłoszeniem.",
     "Chat.ThisPlayerCannotBeReported": "Gracz{darkred}{0}{default} nie moze zostac zgloszony.",
     "Chat.YourReportHasBeenSolved": "Twoje zgloszenie gracza: {darkred}{0}{default} zostalo rozwiazane.",
     "Chat.SelfReport": "Nie mozesz sam siebie zglosic!",
@@ -30,3 +31,5 @@
     "Menu.ReportInfo.Target": "Zgloszony: {0}",
     "Menu.ReportInfo.Time": "Utworzony: {0}"
 }
+
+

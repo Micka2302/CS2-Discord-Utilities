@@ -1,19 +1,22 @@
-{
+﻿{
     "Chat.Prefix": "{darkred}[Discord]{default}",
     "Menu.ReportSelectPlayer": "Selecione um player",
     "Menu.ReportSelectReason": "Selecione um motivo",
     "Menu.ReportCustomReason": "Motivo Customizado",
     "Menu.Back": "Voltar",
-    "Chat.ReportSend": "Player {0} foi reportado! (Razão: {1})",
+    "Chat.ReportSend": "Player {0} foi reportado! (RazÃ£o: {1})",
     "Chat.ReportCancelled": "Seu report foi cancelado com sucesso.",
-    "Chat.ReportShortReason": "Caractéres insuficientes para envio de report.",
-    "Chat.ReportBlockedReason": "A razão não pode conter a palavra {darkred}{0}{default}! Por favor, insira o motivo novamente. Para cancelar, digite {green}!cancel",
-    "Chat.ReportNoTargetsFound": "Nenhum player encontrado! Só você está no server!",
-    "Chat.ReportCooldown": "Você pode usar o report uma vez a cada {green}{0} segundos{default}!",
-    "Chat.SelfReport": "Você não pode se reportar!",
+    "Chat.ReportShortReason": "CaractÃ©res insuficientes para envio de report.",
+    "Chat.ReportBlockedReason": "A razÃ£o nÃ£o pode conter a palavra {darkred}{0}{default}! Por favor, insira o motivo novamente. Para cancelar, digite {green}!cancel",
+    "Chat.ReportNoTargetsFound": "Nenhum player encontrado! SÃ³ vocÃª estÃ¡ no server!",
+    "Chat.ReportCooldown": "VocÃª pode usar o report uma vez a cada {green}{0} segundos{default}!",
+    "Chat.TargetRecentlyReported": "O jogador {darkred}{0}{default} já foi reportado! Aguarde {green}{1} segundos antes de reportar novamente.",
+    "Chat.SelfReport": "VocÃª nÃ£o pode se reportar!",
     "Chat.InserYourReason": "Digite no chat o motivo do report! Para cancelar, digite {green}!cancel",
-    "Chat.InvalidReportUsage": "Uso invalido de report! {green}/report <player> <razão>",
-    "Chat.TargetNotFound": "O player com o nome {green}{0}{default} não foi encontrado!",
-    "Chat.TargetNotConnected": "Player {green}{0}{default} não está mais conectado!",
-    "Chat.MultipleTargetFound": "Vários players foram encontrados com o mesmo nome {green}{0}{default}!"
+    "Chat.InvalidReportUsage": "Uso invalido de report! {green}/report <player> <razÃ£o>",
+    "Chat.TargetNotFound": "O player com o nome {green}{0}{default} nÃ£o foi encontrado!",
+    "Chat.TargetNotConnected": "Player {green}{0}{default} nÃ£o estÃ¡ mais conectado!",
+    "Chat.MultipleTargetFound": "VÃ¡rios players foram encontrados com o mesmo nome {green}{0}{default}!"
 }
+
+
