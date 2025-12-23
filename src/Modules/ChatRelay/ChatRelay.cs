@@ -131,28 +131,24 @@ namespace ChatRelay
                 DiscordUtilities!.SendConsoleMessage("Can't send a message to Discord because the 'Channel ID' is empty! (Chat Relay (ChatLog))", MessageType.Error);
                 return;
             }
+
+            var chatEmbedContent = isTeamMessage ? Config.Chatlog.TeamChatEmbed.Content : Config.Chatlog.AllChatEmbed.Content;
+            var mutedPrefix = GetMutedPrefix(player);
+            var messageWithPrefix = !string.IsNullOrEmpty(mutedPrefix) && !chatEmbedContent.Contains("{MUTE_PREFIX}", StringComparison.OrdinalIgnoreCase) ? $"{mutedPrefix}{message}" : message;
+
             var replaceVariablesBuilder = new ReplaceVariables.Builder
             {
                 ServerData = true,
                 PlayerData = player,
                 CustomVariables = new Dictionary<string, string>{
-                    { "{MESSAGE}", message }
+                    { "{MESSAGE}", messageWithPrefix },
+                    { "{MUTE_PREFIX}", mutedPrefix }
                 },
             };
-            if (isTeamMessage)
-            {
-                var config = Config.Chatlog.TeamChatEmbed;
-                var embedBuider = DiscordUtilities!.GetEmbedBuilderFromConfig(config, replaceVariablesBuilder);
-                var content = DiscordUtilities!.ReplaceVariables(Config.Chatlog.TeamChatEmbed.Content, replaceVariablesBuilder);
-                DiscordUtilities.SendMessageToChannel(ulong.Parse(Config.Chatlog.ChannelID), content, embedBuider, null);
-            }
-            else
-            {
-                var config = Config.Chatlog.AllChatEmbed;
-                var embedBuider = DiscordUtilities!.GetEmbedBuilderFromConfig(config, replaceVariablesBuilder);
-                var content = DiscordUtilities!.ReplaceVariables(Config.Chatlog.AllChatEmbed.Content, replaceVariablesBuilder);
-                DiscordUtilities.SendMessageToChannel(ulong.Parse(Config.Chatlog.ChannelID), content, embedBuider, null);
-            }
+
+            var embedBuider = isTeamMessage ? DiscordUtilities!.GetEmbedBuilderFromConfig(Config.Chatlog.TeamChatEmbed, replaceVariablesBuilder) : DiscordUtilities!.GetEmbedBuilderFromConfig(Config.Chatlog.AllChatEmbed, replaceVariablesBuilder);
+            var content = DiscordUtilities!.ReplaceVariables(chatEmbedContent, replaceVariablesBuilder);
+            DiscordUtilities.SendMessageToChannel(ulong.Parse(Config.Chatlog.ChannelID), content, embedBuider, null);
         }
 
         public void PerformAdminChatlog(CCSPlayerController player, string message)
@@ -193,6 +189,33 @@ namespace ChatRelay
 
             DiscordUtilities = DUApi;
             return DUApi;
+        }
+
+        private string GetMutedPrefix(CCSPlayerController player)
+        {
+            if (string.IsNullOrWhiteSpace(Config.Chatlog.MutedPrefixEmoji))
+                return string.Empty;
+
+            if (!IsPlayerMuted(player))
+                return string.Empty;
+
+            var prefix = Config.Chatlog.MutedPrefixEmoji.Trim();
+            return string.IsNullOrEmpty(prefix) ? string.Empty : $"{prefix} ";
+        }
+
+        private bool IsPlayerMuted(CCSPlayerController player)
+        {
+            if (player == null || !player.IsValid)
+                return false;
+
+            try
+            {
+                return player.HasCommunicationAbuseMute || player.VoiceFlags.HasFlag(VoiceFlags.Muted);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private string ReplaceColors(string message)
