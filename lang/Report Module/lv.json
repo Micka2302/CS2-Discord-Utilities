@@ -1,5 +1,6 @@
 ﻿{
     "Chat.Prefix": "{darkred}[Discord]{default}",
+    "Chat.MenuUnavailable": "Kitsune menu is not available. Please install the Kitsune-Menu plugin.",
     "Menu.ReportSelectPlayer": "IzvÄ“lies spÄ“lÄ“tÄju",
     "Menu.ReportSelectReason": "IzvÄ“lies iemeslu",
     "Menu.ReportCustomReason": "PielÄgots iemesls (Custom Reason)",
@@ -10,7 +11,7 @@
     "Chat.ReportBlockedReason": "Iemesls nevar saturÄ“t vÄrdu {darkred}{0}{default}! LÅ«dzu, ievadi iemeslu vÄ“lreiz. Lai atceltu, ieraksti {green}!cancel",
     "Chat.ReportNoTargetsFound": "Nav atrasts neviens spÄ“lÄ“tÄjs! ServerÄ« esi tikai tu!",
     "Chat.ReportCooldown": "Tu vari ziÅ†ot ik pÄ“c {green}{0} sekundÄ“m{default}!",
-    "Chat.TargetRecentlyReported": "Spēlētājs {darkred}{0}{default} jau ir ziņots! Lūdzu, pagaidi {green}{1} sekundes{default} pirms atkārtotas ziņošanas.",
+    "Chat.TargetRecentlyReported": "SpÄ“lÄ“tÄjs {darkred}{0}{default} jau ir ziÅ†ots! LÅ«dzu, pagaidi {green}{1} sekundes{default} pirms atkÄrtotas ziÅ†oÅ¡anas.",
     "Chat.ThisPlayerCannotBeReported": "Par spÄ“lÄ“tÄju {darkred}{0}{default} nevar ziÅ†ot.",
     "Chat.YourReportHasBeenSolved": "Tava sÅ«dzÄ«ba par spÄ“lÄ“tÄju {darkred}{0}{default} ir atrisinÄta.",
     "Chat.SelfReport": "Tu nevari sÅ«dzÄ“ties par sevi!",
@@ -31,6 +32,3 @@
     "Menu.ReportInfo.Target": "SpÄ“lÄ“tÄjs: {0}",
     "Menu.ReportInfo.Time": "Izveidots: {0}"
 }
-
-
-

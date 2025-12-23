@@ -1,5 +1,6 @@
 ﻿{
     "Chat.Prefix": "{darkred}[Discord]{default}",
+    "Chat.MenuUnavailable": "Kitsune menu is not available. Please install the Kitsune-Menu plugin.",
     "Menu.ReportSelectPlayer": "Bir Oyuncu SeÃ§in",
     "Menu.ReportSelectReason": "Bir Neden SeÃ§in",
     "Menu.ReportCustomReason": "Ã–zel Neden",
@@ -10,13 +11,24 @@
     "Chat.ReportBlockedReason": "Sebep {darkred}{0}{default} kelimesini iÃ§eremez! LÃ¼tfen nedeni tekrar girin. Ä°ptal etmek iÃ§in {green}!cancel yazÄ±n",
     "Chat.ReportNoTargetsFound": "Hedef bulunamadÄ±!",
     "Chat.ReportCooldown": "Raporu her {green}{0} saniyede bir {default}kullanabilirsiniz!",
-    "Chat.TargetRecentlyReported": "Oyuncu {darkred}{0}{default} zaten bildirildi! Tekrar bildirmeden önce {green}{1} saniye bekleyin.",
+    "Chat.TargetRecentlyReported": "Oyuncu {darkred}{0}{default} zaten bildirildi! Tekrar bildirmeden Ã¶nce {green}{1} saniye bekleyin.",
+    "Chat.ThisPlayerCannotBeReported": "Oyuncu {darkred}{0}{default} rapor edilemez.",
+    "Chat.YourReportHasBeenSolved": "Oyuncu {darkred}{0}{default} iÃ§in raporunÃ¼z Ã§Ã¶zÃ¼ldÃ¼.",
     "Chat.SelfReport": "Kendinizi rapor edemezsiniz!",
     "Chat.InserYourReason": "Nedeninizi sohbete girin! Ä°ptal etmek iÃ§in, {green}!cancel yazÄ±n",
     "Chat.InvalidReportUsage": "GeÃ§ersiz rapor kullanÄ±mÄ±! {green}/report <oyuncu> <neden>",
     "Chat.TargetNotFound": "{green}{0}{default} adÄ±nda bir oyuncu bulunamadÄ±!",
     "Chat.TargetNotConnected": "Oyuncu {green}{0}{default} artÄ±k baÄŸlÄ± deÄŸil!",
-    "Chat.MultipleTargetFound": "AdÄ± {green}{0}{default} olan birden fazla oyuncu bulundu!"
+    "Chat.MultipleTargetFound": "AdÄ± {green}{0}{default} olan birden fazla oyuncu bulundu!",
+    "Chat.AdminReportSend": "{darkred}[Discord]{default} Oyuncu {green}{0}{default} oyuncu {darkblue}{1}{default}'i rapor etti (Neden: {darkred}{2}{default})",
+    "Chat.ReportSolved": "Rapor Ã§Ã¶zÃ¼ldÃ¼ olarak iÅŸaretlendi.",
+    "Chat.NoReportsFound": "Rapor bulunamadÄ±!",
+    "Menu.ReportsList": "Rapor Listesi ({0})",
+    "Menu.ReportInfo": "{0} (Neden: {1})",
+    "Menu.ReportDetails": "Rapor DetaylarÄ±",
+    "Menu.MarkAsSolved": "Ã‡Ã¶zÃ¼ldÃ¼ olarak iÅŸaretle",
+    "Menu.ReportInfo.Sender": "GÃ¶nderen: {0}",
+    "Menu.ReportInfo.Reason": "Neden: {0}",
+    "Menu.ReportInfo.Target": "Hedef: {0}",
+    "Menu.ReportInfo.Time": "OluÅŸturuldu: {0}"
 }
-
-

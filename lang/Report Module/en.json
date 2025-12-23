@@ -1,5 +1,6 @@
-﻿{
+{
     "Chat.Prefix": "{darkred}[Absynthium - CallAdmin]{default}",
+    "Chat.MenuUnavailable": "Kitsune menu is not available. Please install the Kitsune-Menu plugin.",
     "Menu.ReportSelectPlayer": "Select a Player",
     "Menu.ReportSelectReason": "Select a Reason",
     "Menu.ReportCustomReason": "Custom Reason",
@@ -31,5 +32,3 @@
     "Menu.ReportInfo.Target": "Target: {0}",
     "Menu.ReportInfo.Time": "Created: {0}"
 }
-
-
