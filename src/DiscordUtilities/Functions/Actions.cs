@@ -4,6 +4,7 @@ using CounterStrikeSharp.API.Modules.Cvars;
 using MaxMind.GeoIP2;
 using MaxMind.GeoIP2.Exceptions;
 using Newtonsoft.Json;
+using System.IO;
 
 namespace DiscordUtilities
 {
@@ -12,77 +13,71 @@ namespace DiscordUtilities
         public async Task LoadMapImages()
         {
             mapImagesList.Clear();
-            using (HttpClient client = new HttpClient())
+            try
             {
-                try
-                {
-                    HttpResponseMessage response = await client.GetAsync("https://nockycz.github.io/CS2-Discord-Utilities/MapImages/map_list.json");
-                    response.EnsureSuccessStatusCode();
+                HttpResponseMessage response = await SharedHttpClient.GetAsync("https://nockycz.github.io/CS2-Discord-Utilities/MapImages/map_list.json");
+                response.EnsureSuccessStatusCode();
 
-                    string responseBody = await response.Content.ReadAsStringAsync();
-                    mapImagesList = JsonConvert.DeserializeObject<List<string>>(responseBody)!;
-                    if (Config.Debug)
-                        Perform_SendConsoleMessage($"Loaded total '{mapImagesList.Count} Map Images'", ConsoleColor.Cyan);
-                }
-                catch (HttpRequestException ex)
-                {
-                    Perform_SendConsoleMessage($"An error occurred while loading Map Images: '{ex.Message}'", ConsoleColor.Red);
-                }
-                catch (Exception ex)
-                {
-                    Perform_SendConsoleMessage($"An error occurred while loading Map Images: '{ex.Message}'", ConsoleColor.Red);
-                }
+                string responseBody = await response.Content.ReadAsStringAsync();
+                mapImagesList = JsonConvert.DeserializeObject<List<string>>(responseBody)!;
+                if (Config.Debug)
+                    Perform_SendConsoleMessage($"Loaded total '{mapImagesList.Count} Map Images'", ConsoleColor.Cyan);
+            }
+            catch (HttpRequestException ex)
+            {
+                Perform_SendConsoleMessage($"An error occurred while loading Map Images: '{ex.Message}'", ConsoleColor.Red);
+            }
+            catch (Exception ex)
+            {
+                Perform_SendConsoleMessage($"An error occurred while loading Map Images: '{ex.Message}'", ConsoleColor.Red);
             }
         }
 
         public async Task LoadVersions()
         {
             moduleVersions.Clear();
-            using (HttpClient client = new HttpClient())
+            try
             {
-                try
+                HttpResponseMessage response = await SharedHttpClient.GetAsync("https://nockycz.github.io/CS2-Discord-Utilities/module_versions.json");
+                response.EnsureSuccessStatusCode();
+
+                string responseBody = await response.Content.ReadAsStringAsync();
+                var versions = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseBody)!;
+                if (versions != null)
                 {
-                    HttpResponseMessage response = await client.GetAsync("https://nockycz.github.io/CS2-Discord-Utilities/module_versions.json");
-                    response.EnsureSuccessStatusCode();
-
-                    string responseBody = await response.Content.ReadAsStringAsync();
-                    var versions = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseBody)!;
-                    if (versions != null)
+                    foreach (var module in versions)
                     {
-                        foreach (var module in versions)
-                        {
-                            string moduleName = module.Key;
-                            if (!moduleName.Equals("Main"))
-                                moduleName = "[Discord Utilities] " + moduleName;
+                        string moduleName = module.Key;
+                        if (!moduleName.Equals("Main"))
+                            moduleName = "[Discord Utilities] " + moduleName;
 
-                            moduleVersions.Add(moduleName, module.Value);
-                        }
+                        moduleVersions.Add(moduleName, module.Value);
+                    }
 
-                        if (moduleVersions.TryGetValue("Main", out var latestVersion))
+                    if (moduleVersions.TryGetValue("Main", out var latestVersion))
+                    {
+                        if (!ModuleVersion.Trim().Equals(latestVersion.Trim()))
                         {
-                            if (!ModuleVersion.Trim().Equals(latestVersion.Trim()))
-                            {
-                                Console.WriteLine("====================================================================================");
-                                Console.WriteLine("");
-                                Perform_SendConsoleMessage($"Plugin is outdated! (Latest Version: {latestVersion})", ConsoleColor.DarkRed);
-                                Perform_SendConsoleMessage($"Check: https://github.com/NockyCZ/CS2-Discord-Utilities/", ConsoleColor.DarkRed);
-                                Console.WriteLine("");
-                                Console.WriteLine("====================================================================================");
-                            }
+                            Console.WriteLine("====================================================================================");
+                            Console.WriteLine("");
+                            Perform_SendConsoleMessage($"Plugin is outdated! (Latest Version: {latestVersion})", ConsoleColor.DarkRed);
+                            Perform_SendConsoleMessage($"Check: https://github.com/NockyCZ/CS2-Discord-Utilities/", ConsoleColor.DarkRed);
+                            Console.WriteLine("");
+                            Console.WriteLine("====================================================================================");
                         }
                     }
-                    else
-                        Perform_SendConsoleMessage($"Version je null", ConsoleColor.Red);
+                }
+                else
+                    Perform_SendConsoleMessage($"Version je null", ConsoleColor.Red);
 
-                }
-                catch (HttpRequestException ex)
-                {
-                    Perform_SendConsoleMessage($"An error occurred while loading module versions: '{ex.Message}'", ConsoleColor.Red);
-                }
-                catch (Exception ex)
-                {
-                    Perform_SendConsoleMessage($"An error occurred while loading module versions: '{ex.Message}'", ConsoleColor.Red);
-                }
+            }
+            catch (HttpRequestException ex)
+            {
+                Perform_SendConsoleMessage($"An error occurred while loading module versions: '{ex.Message}'", ConsoleColor.Red);
+            }
+            catch (Exception ex)
+            {
+                Perform_SendConsoleMessage($"An error occurred while loading module versions: '{ex.Message}'", ConsoleColor.Red);
             }
         }
 
@@ -184,18 +179,40 @@ namespace DiscordUtilities
                 LinkedUserLoaded(user, target);
             }
         }
+        private static DatabaseReader? geoIpReader;
+        private static readonly object GeoIpLock = new();
+
+        private DatabaseReader? GetGeoIpReader()
+        {
+            if (geoIpReader != null)
+                return geoIpReader;
+
+            lock (GeoIpLock)
+            {
+                if (geoIpReader == null)
+                {
+                    var dbPath = Path.Combine(ModuleDirectory, "GeoLite2-Country.mmdb");
+                    if (File.Exists(dbPath))
+                        geoIpReader = new DatabaseReader(dbPath);
+                }
+            }
+
+            return geoIpReader;
+        }
+
         private void LoadPlayerCountry(string IpAddress, ulong steamid)
         {
             try
             {
-                using (var reader = new DatabaseReader(ModuleDirectory + "/GeoLite2-Country.mmdb"))
-                {
-                    var response = reader.Country(IpAddress);
-                    string[] country = new string[2];
-                    country[0] = response.Country.Name!;
-                    country[1] = response.Country.IsoCode!;
-                    UpdatePlayerCountry(steamid, country);
-                }
+                var reader = GetGeoIpReader();
+                if (reader == null)
+                    throw new FileNotFoundException("GeoLite2-Country.mmdb not found");
+
+                var response = reader.Country(IpAddress);
+                string[] country = new string[2];
+                country[0] = response.Country.Name!;
+                country[1] = response.Country.IsoCode!;
+                UpdatePlayerCountry(steamid, country);
             }
             catch (AddressNotFoundException ex)
             {

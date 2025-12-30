@@ -1,6 +1,7 @@
 
 using Discord.WebSocket;
 using Newtonsoft.Json;
+using System.Linq;
 
 namespace DiscordUtilities
 {
@@ -74,10 +75,12 @@ namespace DiscordUtilities
         {
             var timedRoles = GetTimedRoles();
             bool updateFile = false;
-            foreach (var x in timedRoles)
+            var now = DateTime.Now;
+            var usersToRemove = new List<string>();
+            foreach (var x in timedRoles.ToList())
             {
-                var rolesToRemove = x.Value.Where(x => x.Value < DateTime.Now).Select(x => x.Key).ToList();
-                if (rolesToRemove == null || rolesToRemove.Count == 0)
+                var rolesToRemove = x.Value.Where(role => role.Value < now).Select(role => role.Key).ToList();
+                if (rolesToRemove.Count == 0)
                     continue;
 
                 updateFile = true;
@@ -90,7 +93,15 @@ namespace DiscordUtilities
                 }
 
                 if (timedRoles[x.Key].Count == 0)
-                    timedRoles.Remove(x.Key);
+                    usersToRemove.Add(x.Key);
+            }
+
+            if (usersToRemove.Count > 0)
+            {
+                foreach (var userId in usersToRemove)
+                {
+                    timedRoles.Remove(userId);
+                }
             }
 
             if (updateFile)

@@ -23,7 +23,6 @@ namespace DiscordUtilities
         {
             if (!string.IsNullOrEmpty(Config.Database.Password) && !string.IsNullOrEmpty(Config.Database.Host) && !string.IsNullOrEmpty(Config.Database.DatabaseName) && !string.IsNullOrEmpty(Config.Database.User))
             {
-                _ = LoadDiscordBOT();
                 databaseData = new DatabaseConnection
                 {
                     Server = Config.Database.Host,
@@ -34,27 +33,11 @@ namespace DiscordUtilities
                 };
                 
                 CreateDatabaseConnection().GetAwaiter().GetResult();
-                _ = LoadDiscordBOT();
+                _ = EnsureDiscordBotStarted();
 
                 if (string.IsNullOrEmpty(Config.ServerID) || !ulong.TryParse(Config.ServerID, out _))
                 {
                     Perform_SendConsoleMessage("Invalid Discord Server ID!", ConsoleColor.Red);
-                }
-                else
-                {
-                    int counter = 0;
-                    while (!IsBotConnected)
-                    {
-                        counter++;
-                        if (counter > 5)
-                        {
-                            Perform_SendConsoleMessage("Discord BOT failed to connect!", ConsoleColor.Red);
-                            break;
-                        }
-                        else
-                            Perform_SendConsoleMessage("Loading Discord BOT...", ConsoleColor.DarkYellow);
-                        Thread.Sleep(3000);
-                    }
                 }
             }
             else
@@ -118,10 +101,25 @@ namespace DiscordUtilities
             RegisterListener<Listeners.OnMapEnd>(() => { mapStarted = false; });
         }
 
+        private Task EnsureDiscordBotStarted()
+        {
+            lock (BotClientStartLock)
+            {
+                if (BotConnectionTask != null && !BotConnectionTask.IsCompleted && !BotConnectionTask.IsFaulted)
+                    return BotConnectionTask;
+
+                BotConnectionTask = LoadDiscordBOT();
+                return BotConnectionTask;
+            }
+        }
+
         private async Task LoadDiscordBOT()
         {
             try
             {
+                if (BotClient != null && (BotClient.ConnectionState == ConnectionState.Connected || BotClient.ConnectionState == ConnectionState.Connecting || BotClient.LoginState == LoginState.LoggingIn))
+                    return;
+
                 BotClient = new DiscordSocketClient(new DiscordSocketConfig()
                 {
                     AlwaysDownloadUsers = true,
@@ -135,12 +133,10 @@ namespace DiscordUtilities
                     .AddSingleton(BotCommands)
                     .BuildServiceProvider();
 
-                await BotClient.LoginAsync(TokenType.Bot, Config.Token);
-                await BotClient.StartAsync();
-
                 BotClient.Ready += ReadyAsync;
 
-                await Task.Delay(-1);
+                await BotClient.LoginAsync(TokenType.Bot, Config.Token);
+                await BotClient.StartAsync();
             }
             catch (Exception ex)
             {
@@ -338,6 +334,8 @@ namespace DiscordUtilities
                 BotClient.MessageReceived -= MessageReceivedHandler;
                 BotClient.InteractionCreated -= InteractionCreatedHandler;
                 BotClient.GuildScheduledEventCreated -= ScheduledEventCreated;
+                BotClient.GuildMemberUpdated -= GuildMemberUpdated;
+                BotClient.UserLeft -= GuildMemberLeft;
             }
         }
 

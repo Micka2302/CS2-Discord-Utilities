@@ -9,6 +9,7 @@ using DiscordUtilitiesAPI.Events;
 using DiscordUtilitiesAPI.Helpers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 
 namespace ServerStatus
 {
@@ -19,6 +20,7 @@ namespace ServerStatus
         public override string ModuleVersion => "1.3";
         private IDiscordUtilitiesAPI? DiscordUtilities { get; set; }
         public Config Config { get; set; } = new();
+        private CounterStrikeSharp.API.Modules.Timers.Timer? statusTimer;
         public void OnConfigParsed(Config config) { Config = config; }
         public override void OnAllPluginsLoaded(bool hotReload)
         {
@@ -27,6 +29,7 @@ namespace ServerStatus
         }
         public override void Unload(bool hotReload)
         {
+            statusTimer?.Kill();
             GetDiscordUtilitiesEventSender().DiscordUtilitiesEventHandlers -= DiscordUtilitiesEventHandler;
         }
 
@@ -43,65 +46,11 @@ namespace ServerStatus
                 if (DiscordUtilities!.Debug())
                     DiscordUtilities.SendConsoleMessage($"Starting Repeateable Timer ('{Config.UpdateTimer} secs') for the 'Server Status' update.", MessageType.Debug);
 
-                AddTimer(Config.UpdateTimer, () =>
+                statusTimer?.Kill();
+                statusTimer = AddTimer(Config.UpdateTimer, () =>
                 {
-                    var replaceVariablesBuilder = new ReplaceVariables.Builder
-                    {
-                        ServerData = true
-                    };
-
-                    var config = Config.ServerStatusEmbed;
-                    var embedBuider = DiscordUtilities!.GetEmbedBuilderFromConfig(config, replaceVariablesBuilder);
-                    var content = DiscordUtilities!.ReplaceVariables(Config.ServerStatusEmbed.Content, replaceVariablesBuilder);
-
-                    var componentsBuilder = new Components.Builder();
-                    if (Config.ServerStatusEmbed.Buttons.JoinButton.Enabled)
-                    {
-                        var linkButton = new List<Components.LinkButtonsBuilder>
-                        {
-                            new Components.LinkButtonsBuilder
-                            {
-                                Label = DiscordUtilities!.ReplaceVariables(Config.ServerStatusEmbed.Buttons.JoinButton.Text, replaceVariablesBuilder),
-                                URL = DiscordUtilities!.ReplaceVariables(Config.ServerStatusEmbed.Buttons.JoinButton.URL, replaceVariablesBuilder),
-                                Emoji = Config.ServerStatusEmbed.Buttons.JoinButton.Emoji,
-                            }
-                        };
-                        componentsBuilder.LinkButtons = linkButton;
-                    }
-                    var Buttons = new List<Components.InteractiveButtonsBuilder>();
-                    if (Config.ServerStatusEmbed.Buttons.LeaderboardButton.Enabled)
-                    {
-                        Buttons.Add(new Components.InteractiveButtonsBuilder
-                        {
-                            CustomId = $"leaderboard_{Config.ServerStatusEmbed.Buttons.LeaderboardButton.ServerName}",
-                            Label = DiscordUtilities!.ReplaceVariables(Config.ServerStatusEmbed.Buttons.LeaderboardButton.Text, replaceVariablesBuilder),
-                            Color = (Components.ButtonColor)Config.ServerStatusEmbed.Buttons.LeaderboardButton.Color,
-                            Emoji = Config.ServerStatusEmbed.Buttons.LeaderboardButton.Emoji,
-                        });
-                    }
-                    if (Config.ServerStatusEmbed.Buttons.BanlistButton.Enabled)
-                    {
-                        Buttons.Add(new Components.InteractiveButtonsBuilder
-                        {
-                            CustomId = "banlist_lastpunishments",
-                            Label = DiscordUtilities!.ReplaceVariables(Config.ServerStatusEmbed.Buttons.BanlistButton.Text, replaceVariablesBuilder),
-                            Color = (Components.ButtonColor)Config.ServerStatusEmbed.Buttons.BanlistButton.Color,
-                            Emoji = Config.ServerStatusEmbed.Buttons.BanlistButton.Emoji,
-                        });
-                    }
-                    if (Config.ServerStatusEmbed.Buttons.SearchPlayerButton.Enabled)
-                    {
-                        Buttons.Add(new Components.InteractiveButtonsBuilder
-                        {
-                            CustomId = $"playerstatsmodal_{Config.ServerStatusEmbed.Buttons.SearchPlayerButton.ServerName}",
-                            Label = DiscordUtilities!.ReplaceVariables(Config.ServerStatusEmbed.Buttons.SearchPlayerButton.Text, replaceVariablesBuilder),
-                            Color = (Components.ButtonColor)Config.ServerStatusEmbed.Buttons.SearchPlayerButton.Color,
-                            Emoji = Config.ServerStatusEmbed.Buttons.SearchPlayerButton.Emoji,
-                        });
-                    }
-                    componentsBuilder.InteractiveButtons = Buttons;
-
-                    DiscordUtilities!.UpdateMessage(ulong.Parse(Config.MessageID), ulong.Parse(Config.ChannelID), content, embedBuider, componentsBuilder);
+                    var payload = BuildStatusPayload();
+                    DiscordUtilities!.UpdateMessage(ulong.Parse(Config.MessageID), ulong.Parse(Config.ChannelID), payload.Content, payload.Embed, payload.Components);
                 }, TimerFlags.REPEAT);
             }
         }
@@ -161,14 +110,29 @@ namespace ServerStatus
                 ServerData = true
             };
 
-            var config = Config.ServerStatusEmbed;
-            var embedBuider = DiscordUtilities!.GetEmbedBuilderFromConfig(config, replaceVariablesBuilder);
-            var content = DiscordUtilities!.ReplaceVariables(Config.ServerStatusEmbed.Content, replaceVariablesBuilder);
+            var payload = BuildStatusPayload();
+            DiscordUtilities!.SendCustomMessageToChannel("serverstatus", ulong.Parse(Config.ChannelID), payload.Content, payload.Embed, payload.Components);
+        }
 
+        private (string Content, Embeds.Builder Embed, Components.Builder Components) BuildStatusPayload()
+        {
+            var replaceVariablesBuilder = new ReplaceVariables.Builder
+            {
+                ServerData = true
+            };
+
+            var embedBuilder = DiscordUtilities!.GetEmbedBuilderFromConfig(Config.ServerStatusEmbed, replaceVariablesBuilder);
+            var content = DiscordUtilities!.ReplaceVariables(Config.ServerStatusEmbed.Content, replaceVariablesBuilder);
+            var componentsBuilder = BuildComponents(replaceVariablesBuilder);
+            return (content, embedBuilder, componentsBuilder);
+        }
+
+        private Components.Builder BuildComponents(ReplaceVariables.Builder replaceVariablesBuilder)
+        {
             var componentsBuilder = new Components.Builder();
             if (Config.ServerStatusEmbed.Buttons.JoinButton.Enabled)
             {
-                var linkButton = new List<Components.LinkButtonsBuilder>
+                componentsBuilder.LinkButtons = new List<Components.LinkButtonsBuilder>
                 {
                     new Components.LinkButtonsBuilder
                     {
@@ -177,12 +141,12 @@ namespace ServerStatus
                         Emoji = Config.ServerStatusEmbed.Buttons.JoinButton.Emoji,
                     }
                 };
-                componentsBuilder.LinkButtons = linkButton;
             }
-            var Buttons = new List<Components.InteractiveButtonsBuilder>();
+
+            var buttons = new List<Components.InteractiveButtonsBuilder>();
             if (Config.ServerStatusEmbed.Buttons.LeaderboardButton.Enabled)
             {
-                Buttons.Add(new Components.InteractiveButtonsBuilder
+                buttons.Add(new Components.InteractiveButtonsBuilder
                 {
                     CustomId = $"leaderboard_{Config.ServerStatusEmbed.Buttons.LeaderboardButton.ServerName}",
                     Label = DiscordUtilities!.ReplaceVariables(Config.ServerStatusEmbed.Buttons.LeaderboardButton.Text, replaceVariablesBuilder),
@@ -192,7 +156,7 @@ namespace ServerStatus
             }
             if (Config.ServerStatusEmbed.Buttons.BanlistButton.Enabled)
             {
-                Buttons.Add(new Components.InteractiveButtonsBuilder
+                buttons.Add(new Components.InteractiveButtonsBuilder
                 {
                     CustomId = "banlist_lastpunishments",
                     Label = DiscordUtilities!.ReplaceVariables(Config.ServerStatusEmbed.Buttons.BanlistButton.Text, replaceVariablesBuilder),
@@ -202,7 +166,7 @@ namespace ServerStatus
             }
             if (Config.ServerStatusEmbed.Buttons.SearchPlayerButton.Enabled)
             {
-                Buttons.Add(new Components.InteractiveButtonsBuilder
+                buttons.Add(new Components.InteractiveButtonsBuilder
                 {
                     CustomId = $"playerstatsmodal_{Config.ServerStatusEmbed.Buttons.SearchPlayerButton.ServerName}",
                     Label = DiscordUtilities!.ReplaceVariables(Config.ServerStatusEmbed.Buttons.SearchPlayerButton.Text, replaceVariablesBuilder),
@@ -210,9 +174,8 @@ namespace ServerStatus
                     Emoji = Config.ServerStatusEmbed.Buttons.SearchPlayerButton.Emoji,
                 });
             }
-            componentsBuilder.InteractiveButtons = Buttons;
-
-            DiscordUtilities!.SendCustomMessageToChannel("serverstatus", ulong.Parse(Config.ChannelID), content, embedBuider, componentsBuilder);
+            componentsBuilder.InteractiveButtons = buttons;
+            return componentsBuilder;
         }
         private IDiscordUtilitiesAPI GetDiscordUtilitiesEventSender()
         {

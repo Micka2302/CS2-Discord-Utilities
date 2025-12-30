@@ -9,6 +9,7 @@ using DiscordUtilitiesAPI.Helpers;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Security.Cryptography;
 
 namespace DiscordUtilities
 {
@@ -262,20 +263,19 @@ namespace DiscordUtilities
             return null;
         }
 
+        private static readonly char[] AlphaNumericChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".ToCharArray();
+        private static readonly char[] NumericChars = "0123456789".ToCharArray();
+
         private string GetRandomCode(int length, bool onlyNumbers = false)
         {
-            string chars;
-            if (onlyNumbers)
-                chars = "0123456789";
-            else
-                chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            var chars = onlyNumbers ? NumericChars : AlphaNumericChars;
+            Span<byte> randomBytes = length <= 256 ? stackalloc byte[length] : new byte[length];
+            RandomNumberGenerator.Fill(randomBytes);
 
-            var random = new Random();
             var keyBuilder = new StringBuilder(length);
-
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < randomBytes.Length; i++)
             {
-                keyBuilder.Append(chars[random.Next(chars.Length)]);
+                keyBuilder.Append(chars[randomBytes[i] % chars.Length]);
             }
 
             return keyBuilder.ToString();

@@ -2,6 +2,8 @@ using CounterStrikeSharp.API.Core.Capabilities;
 using Discord.Commands;
 using Discord.WebSocket;
 using DiscordUtilitiesAPI;
+using System.Net;
+using System.Net.Http;
 
 namespace DiscordUtilities
 {
@@ -23,5 +25,11 @@ namespace DiscordUtilities
         public static string DateFormat = "";
         public static string LastBotActivityText = "";
         public static DateTime LastInteractionTime = DateTime.Now;
+        private static readonly HttpClient SharedHttpClient = new(new HttpClientHandler
+        {
+            AutomaticDecompression = DecompressionMethods.All
+        });
+        private static readonly object BotClientStartLock = new();
+        private static Task? BotConnectionTask;
     }
 }

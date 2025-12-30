@@ -6,6 +6,7 @@ using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Utils;
 using System.Reflection;
+using System.Linq;
 using DiscordUtilitiesAPI;
 using DiscordUtilitiesAPI.Builders;
 using DiscordUtilitiesAPI.Events;
@@ -20,7 +21,15 @@ namespace ChatRelay
         public override string ModuleVersion => "1.2";
         private IDiscordUtilitiesAPI? DiscordUtilities { get; set; }
         public Config Config { get; set; } = new();
-        public void OnConfigParsed(Config config) { Config = config; }
+        private List<string> _blockedWords = new();
+        private Dictionary<string, string> _colorPlaceholders = new(StringComparer.OrdinalIgnoreCase);
+        public void OnConfigParsed(Config config)
+        {
+            Config = config;
+            _blockedWords = config.Chatlog.BlockedWords.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+            _colorPlaceholders = typeof(ChatColors).GetFields()
+                .ToDictionary(f => $"{{{f.Name}}}", f => f.GetValue(null)?.ToString() ?? string.Empty, StringComparer.OrdinalIgnoreCase);
+        }
         public override void OnAllPluginsLoaded(bool hotReload)
         {
             GetDiscordUtilitiesEventSender().DiscordUtilitiesEventHandlers += DiscordUtilitiesEventHandler;
@@ -47,11 +56,16 @@ namespace ChatRelay
                 if ((msg.StartsWith('!') || msg.StartsWith('/')) && !Config.Chatlog.DisplayCommands)
                     return HookResult.Continue;
 
-                string[] blockedWords = Config.Chatlog.BlockedWords.Split(',');
-                foreach (var word in blockedWords)
+                if (_blockedWords.Count > 0)
                 {
-                    if (msg.Contains(word))
-                        msg = msg.Replace(word, "");
+                    foreach (var word in _blockedWords)
+                    {
+                        if (string.IsNullOrEmpty(word))
+                            continue;
+
+                        if (msg.Contains(word, StringComparison.Ordinal))
+                            msg = msg.Replace(word, string.Empty, StringComparison.Ordinal);
+                    }
                 }
                 if (!string.IsNullOrEmpty(msg))
                     PerformChatlog(player, msg, false);
@@ -76,11 +90,16 @@ namespace ChatRelay
                 if ((msg.StartsWith('!') || msg.StartsWith('/')) && !Config.Chatlog.DisplayCommands)
                     return HookResult.Continue;
 
-                string[] blockedWords = Config.Chatlog.BlockedWords.Split(',');
-                foreach (var word in blockedWords)
+                if (_blockedWords.Count > 0)
                 {
-                    if (msg.Contains(word))
-                        msg = msg.Replace(word, "");
+                    foreach (var word in _blockedWords)
+                    {
+                        if (string.IsNullOrEmpty(word))
+                            continue;
+
+                        if (msg.Contains(word, StringComparison.Ordinal))
+                            msg = msg.Replace(word, string.Empty, StringComparison.Ordinal);
+                    }
                 }
                 if (!string.IsNullOrEmpty(msg))
                     PerformChatlog(player, msg, true);
@@ -389,16 +408,17 @@ namespace ChatRelay
 
         private string ReplaceColors(string message)
         {
+            if (string.IsNullOrEmpty(message) || _colorPlaceholders.Count == 0)
+                return message;
+
             var modifiedValue = message;
-            foreach (var field in typeof(ChatColors).GetFields())
+            foreach (var placeholder in _colorPlaceholders)
             {
-                string pattern = $"{{{field.Name}}}";
-                if (modifiedValue.Contains(pattern, StringComparison.OrdinalIgnoreCase))
-                {
-                    modifiedValue = modifiedValue.Replace(pattern, field.GetValue(null)?.ToString() ?? string.Empty, StringComparison.OrdinalIgnoreCase);
-                }
+                if (modifiedValue.Contains(placeholder.Key, StringComparison.OrdinalIgnoreCase))
+                    modifiedValue = modifiedValue.Replace(placeholder.Key, placeholder.Value, StringComparison.OrdinalIgnoreCase);
             }
-            return modifiedValue.Equals(message) ? message : $" {modifiedValue}";
+
+            return modifiedValue.Equals(message, StringComparison.Ordinal) ? message : $" {modifiedValue}";
         }
     }
 }

@@ -5,6 +5,8 @@ using DiscordUtilitiesAPI;
 using DiscordUtilitiesAPI.Builders;
 using DiscordUtilitiesAPI.Events;
 using DiscordUtilitiesAPI.Helpers;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace RCON
 {
@@ -15,7 +17,39 @@ namespace RCON
         public override string ModuleVersion => "1.2";
         private IDiscordUtilitiesAPI? DiscordUtilities { get; set; }
         public DUConfig Config { get; set; } = new();
-        public void OnConfigParsed(DUConfig config) { Config = config; }
+        private HashSet<ulong> _adminRoleIds = new();
+        private List<string> _serverNames = new();
+        private List<Commands.SlashCommandOptionChoices> _serverChoices = new();
+        public void OnConfigParsed(DUConfig config)
+        {
+            Config = config;
+
+            _adminRoleIds.Clear();
+            if (!string.IsNullOrWhiteSpace(config.AdminRolesId))
+            {
+                var roles = config.AdminRolesId.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                foreach (var role in roles)
+                {
+                    if (ulong.TryParse(role, out var roleId))
+                        _adminRoleIds.Add(roleId);
+                }
+            }
+
+            _serverNames = config.ServerList.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+            _serverChoices = _serverNames.Select(name => new Commands.SlashCommandOptionChoices
+            {
+                Name = name,
+                Value = name
+            }).ToList();
+            if (_serverNames.Count > 1)
+            {
+                _serverChoices.Add(new Commands.SlashCommandOptionChoices
+                {
+                    Name = "All",
+                    Value = "All"
+                });
+            }
+        }
         public override void OnAllPluginsLoaded(bool hotReload)
         {
             GetDiscordUtilitiesEventSender().DiscordUtilitiesEventHandlers += DiscordUtilitiesEventHandler;
@@ -47,20 +81,16 @@ namespace RCON
                 if (DiscordUtilities!.Debug())
                     DiscordUtilities.SendConsoleMessage($"Slash command '{command.CommandName}' has been successfully logged", MessageType.Debug);
 
-                if (!string.IsNullOrEmpty(Config.AdminRolesId))
+                if (_adminRoleIds.Count > 0)
                 {
-                    var requiredRoles = Config.AdminRolesId.Trim().Split(',').ToList();
-                    if (requiredRoles != null && requiredRoles.Count > 0)
+                    bool hasPermission = user.RolesIds.Any(r => _adminRoleIds.Contains(r));
+                    if (!hasPermission)
                     {
-                        bool hasPermission = requiredRoles.Count(role => user.RolesIds.Contains(ulong.Parse(role))) > 0;
-                        if (!hasPermission)
-                        {
-                            var failedConfig = Config.RconFailedEmbed;
-                            var embed = DiscordUtilities!.GetEmbedBuilderFromConfig(failedConfig, null);
-                            var failedContent = Config.RconReplyEmbed.Content;
-                            DiscordUtilities!.SendRespondMessageToSlashCommand(command.InteractionId, failedContent, embed, null, Config.RconFailedEmbed.SilentResponse);
-                            return;
-                        }
+                        var failedConfig = Config.RconFailedEmbed;
+                        var embed = DiscordUtilities!.GetEmbedBuilderFromConfig(failedConfig, null);
+                        var failedContent = Config.RconReplyEmbed.Content;
+                        DiscordUtilities!.SendRespondMessageToSlashCommand(command.InteractionId, failedContent, embed, null, Config.RconFailedEmbed.SilentResponse);
+                        return;
                     }
                 }
 
@@ -68,18 +98,18 @@ namespace RCON
                 string[] data = new string[2];
                 foreach (var option in options)
                 {
-                    if (option.Name == Config.ServerOptionName)
+                    if (option.Name.Equals(Config.ServerOptionName, StringComparison.OrdinalIgnoreCase))
                     {
                         data[1] = option.Value;
                     }
-                    else if (option.Name == Config.CommandOptionName)
+                    else if (option.Name.Equals(Config.CommandOptionName, StringComparison.OrdinalIgnoreCase))
                     {
                         data[0] = option.Value;
                     }
                 }
-                if (data[1] != Config.Server)
+                if (!string.Equals(data[1], Config.Server, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (!data[1].Equals("All"))
+                    if (!data[1].Equals("All", StringComparison.OrdinalIgnoreCase))
                     {
                         if (DiscordUtilities!.Debug())
                             DiscordUtilities.SendConsoleMessage($"This server is not '{data[1]}'! (RCON)", MessageType.Debug);
@@ -97,7 +127,6 @@ namespace RCON
                 var config = Config.RconReplyEmbed;
                 var embedBuider = DiscordUtilities!.GetEmbedBuilderFromConfig(config, replaceVariablesBuilder);
                 var content = DiscordUtilities.ReplaceVariables(Config.RconReplyEmbed.Content, replaceVariablesBuilder);
-                content = DiscordUtilities.ReplaceVariables(content, replaceVariablesBuilder);
 
                 Server.ExecuteCommand(data[0]);
                 DiscordUtilities.SendRespondMessageToSlashCommand(command.InteractionId, content, embedBuider, null, Config.RconReplyEmbed.SilentResponse);
@@ -113,25 +142,7 @@ namespace RCON
                 Description = Config.CommandDescription
             };
 
-            var optionChoices = new List<Commands.SlashCommandOptionChoices>();
-            string[] Servers = Config.ServerList.Trim().Split(',');
-            foreach (var server in Servers)
-            {
-                var choice = new Commands.SlashCommandOptionChoices
-                {
-                    Name = server,
-                    Value = server
-                };
-                optionChoices.Add(choice);
-            }
-            if (Servers.Count() > 1)
-            {
-                optionChoices.Add(new Commands.SlashCommandOptionChoices
-                {
-                    Name = "All",
-                    Value = "All"
-                });
-            }
+            var optionChoices = _serverChoices.Count > 0 ? new List<Commands.SlashCommandOptionChoices>(_serverChoices) : new List<Commands.SlashCommandOptionChoices>();
 
             var commandOptions = new List<Commands.SlashCommandOptionsData>
             {

@@ -1,4 +1,5 @@
 ﻿
+using System.Collections.Generic;
 using System.Data;
 using System.Text;
 using CounterStrikeSharp.API;
@@ -27,7 +28,7 @@ namespace EventNotifications
             GetDiscordUtilitiesEventSender().DiscordUtilitiesEventHandlers += DiscordUtilitiesEventHandler;
             DiscordUtilities!.CheckVersion(ModuleName, ModuleVersion);
         }
-        public List<ulong> blockedJoinAndLeaveMessage = new();
+        public HashSet<ulong> blockedJoinAndLeaveMessage = new();
         public override void Load(bool hotReload)
         {
             RegisterListener<Listeners.OnMapEnd>(() =>
@@ -250,8 +251,7 @@ namespace EventNotifications
             var players = Utilities.GetPlayers().Where(p => !p.IsBot && !p.IsHLTV && DiscordUtilities!.IsPlayerDataLoaded(p));
             foreach (var p in players)
             {
-                if (!blockedJoinAndLeaveMessage.Contains(p.SteamID))
-                    blockedJoinAndLeaveMessage.Add(p.SteamID);
+                blockedJoinAndLeaveMessage.Add(p.SteamID);
             }
 
             PerformMatchEnd();
