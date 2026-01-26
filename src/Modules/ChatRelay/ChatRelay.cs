@@ -131,26 +131,38 @@ namespace ChatRelay
                 DiscordUtilities!.SendConsoleMessage("Can't send a message to Discord because the 'Channel ID' is empty! (Chat Relay (ChatLog))", MessageType.Error);
                 return;
             }
+
+            var prefix = GetCommunicationPrefix(player);
+            var prefixWithSpace = GetCommunicationPrefixWithSpace(prefix);
+
+            var customVariables = new Dictionary<string, string>{
+                { "{MESSAGE}", message },
+                { "{Communication.Prefix}", prefix },
+                { "{Communication.PrefixWithSpace}", prefixWithSpace }
+            };
+
             var replaceVariablesBuilder = new ReplaceVariables.Builder
             {
                 ServerData = true,
                 PlayerData = player,
-                CustomVariables = new Dictionary<string, string>{
-                    { "{MESSAGE}", message }
-                },
+                CustomVariables = customVariables,
             };
             if (isTeamMessage)
             {
                 var config = Config.Chatlog.TeamChatEmbed;
+                var template = Config.Chatlog.TeamChatEmbed.Content;
                 var embedBuider = DiscordUtilities!.GetEmbedBuilderFromConfig(config, replaceVariablesBuilder);
-                var content = DiscordUtilities!.ReplaceVariables(Config.Chatlog.TeamChatEmbed.Content, replaceVariablesBuilder);
+                var content = DiscordUtilities!.ReplaceVariables(template, replaceVariablesBuilder);
+                content = ApplyPrefixFallback(content, template, prefix);
                 DiscordUtilities.SendMessageToChannel(ulong.Parse(Config.Chatlog.ChannelID), content, embedBuider, null);
             }
             else
             {
                 var config = Config.Chatlog.AllChatEmbed;
+                var template = Config.Chatlog.AllChatEmbed.Content;
                 var embedBuider = DiscordUtilities!.GetEmbedBuilderFromConfig(config, replaceVariablesBuilder);
-                var content = DiscordUtilities!.ReplaceVariables(Config.Chatlog.AllChatEmbed.Content, replaceVariablesBuilder);
+                var content = DiscordUtilities!.ReplaceVariables(template, replaceVariablesBuilder);
+                content = ApplyPrefixFallback(content, template, prefix);
                 DiscordUtilities.SendMessageToChannel(ulong.Parse(Config.Chatlog.ChannelID), content, embedBuider, null);
             }
         }
@@ -176,6 +188,43 @@ namespace ChatRelay
             var embedBuider = DiscordUtilities!.GetEmbedBuilderFromConfig(config, replaceVariablesBuilder);
             var content = DiscordUtilities!.ReplaceVariables(Config.AdminChat.AdminChatEmbed.Content, replaceVariablesBuilder);
             DiscordUtilities.SendMessageToChannel(ulong.Parse(Config.AdminChat.ChannelID), content, embedBuider, null);
+        }
+
+        private string GetCommunicationPrefix(CCSPlayerController player)
+        {
+            if (Config.Chatlog.CommunicationPrefix == null || !Config.Chatlog.CommunicationPrefix.Enabled)
+                return string.Empty;
+
+            try
+            {
+                if (player.VoiceFlags.HasFlag(VoiceFlags.Muted))
+                    return Config.Chatlog.CommunicationPrefix.MutedEmoji;
+            }
+            catch
+            {
+                // VoiceFlags can throw if the controller becomes invalid between checks.
+            }
+
+            return string.Empty;
+        }
+
+        private static string GetCommunicationPrefixWithSpace(string prefix)
+        {
+            return string.IsNullOrEmpty(prefix) ? " " : $" {prefix} ";
+        }
+
+        private static string ApplyPrefixFallback(string content, string template, string prefix)
+        {
+            if (string.IsNullOrEmpty(prefix))
+                return content;
+
+            if (template.Contains("{Communication.Prefix}", StringComparison.OrdinalIgnoreCase) ||
+                template.Contains("{Communication.PrefixWithSpace}", StringComparison.OrdinalIgnoreCase))
+            {
+                return content;
+            }
+
+            return $"{prefix} {content}";
         }
 
         private IDiscordUtilitiesAPI GetDiscordUtilitiesEventSender()

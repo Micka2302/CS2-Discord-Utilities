@@ -12,7 +12,22 @@ public partial class DiscordUtilities : IDiscordUtilitiesAPI
     {
         if (moduleVersions.ContainsKey(moduleName))
         {
-            if (!moduleVersions[moduleName].Equals(moduleVersion))
+            var latest = moduleVersions[moduleName].Trim();
+            var current = moduleVersion.Trim();
+
+            bool warn = false;
+            if (Version.TryParse(latest, out var latestV) && Version.TryParse(current, out var currentV))
+            {
+                // Warn only if running version is older than the latest published version.
+                warn = currentV < latestV;
+            }
+            else
+            {
+                // Fallback: warn only on exact mismatch (case-insensitive) to avoid false positives when dev build > latest.
+                warn = !current.Equals(latest, StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (warn)
             {
                 var moduleWithoutPrefix = moduleName.Replace("[Discord Utilities] ","");
                 Console.WriteLine("====================================================================================");

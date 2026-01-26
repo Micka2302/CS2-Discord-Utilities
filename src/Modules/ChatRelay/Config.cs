@@ -16,6 +16,7 @@ public class Chatlog
     [JsonPropertyName("Blocked Words")] public string BlockedWords { get; set; } = "@everyone,@here";
     [JsonPropertyName("Display Commands")] public bool DisplayCommands { get; set; } = true;
     [JsonPropertyName("Channel ID")] public string ChannelID { get; set; } = "";
+    [JsonPropertyName("Communication Prefix")] public CommunicationPrefix CommunicationPrefix { get; set; } = new CommunicationPrefix();
     [JsonPropertyName("All Chat Embed")] public AllChatEmbed AllChatEmbed { get; set; } = new AllChatEmbed();
     [JsonPropertyName("Team Chat Embed")] public TeamChatEmbed TeamChatEmbed { get; set; } = new TeamChatEmbed();
 }
@@ -30,7 +31,7 @@ public class AdminChat
 
 public class AllChatEmbed
 {
-    [JsonPropertyName("Content")] public string Content { get; set; } = "{Player.CountryEmoji} **[{Player.NameWithoutEmoji}](<{Player.CommunityUrl}>)**: {MESSAGE}";
+    [JsonPropertyName("Content")] public string Content { get; set; } = "{Player.CountryEmoji}{Communication.PrefixWithSpace}**[{Player.NameWithoutEmoji}](<{Player.CommunityUrl}>)**: {MESSAGE}";
     [JsonPropertyName("Title")] public string Title { get; set; } = "";
     [JsonPropertyName("Description")] public string Description { get; set; } = "";
     [JsonPropertyName("Fields")] public string Fields { get; set; } = "";
@@ -43,7 +44,7 @@ public class AllChatEmbed
 
 public class TeamChatEmbed
 {
-    [JsonPropertyName("Content")] public string Content { get; set; } = "{Player.CountryEmoji} [{Player.TeamShortName}] **[{Player.NameWithoutEmoji}](<{Player.CommunityUrl}>)**: {MESSAGE}";
+    [JsonPropertyName("Content")] public string Content { get; set; } = "{Player.CountryEmoji}{Communication.PrefixWithSpace}[{Player.TeamShortName}] **[{Player.NameWithoutEmoji}](<{Player.CommunityUrl}>)**: {MESSAGE}";
     [JsonPropertyName("Title")] public string Title { get; set; } = "";
     [JsonPropertyName("Description")] public string Description { get; set; } = "";
     [JsonPropertyName("Fields")] public string Fields { get; set; } = "";
@@ -72,4 +73,10 @@ public class DiscordRelay
     [JsonPropertyName("Enabled")] public bool Enabled { get; set; } = false;
     [JsonPropertyName("Channel ID")] public string ChannelID { get; set; } = "";
     [JsonPropertyName("Ingame Message Format")] public string MessageFormat { get; set; } = "{Blue}[{DiscordChannel.Name}] {Green}{DiscordUser.DisplayName}: {Default}{DiscordChannel.Message}";
+}
+
+public class CommunicationPrefix
+{
+    [JsonPropertyName("Enabled")] public bool Enabled { get; set; } = true;
+    [JsonPropertyName("Muted/Silenced/Gagged Emoji")] public string MutedEmoji { get; set; } = ":mute:";
 }
